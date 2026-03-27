@@ -41,7 +41,26 @@ const server = new SMTPServer({
     stream.on("data", (chunk) => chunks.push(chunk));
 
     stream.on("end", async () => {
-      const rawEmail = Buffer.concat(chunks);
+      let rawEmail = Buffer.concat(chunks);
+
+      // Strip duplicate headers that SES rejects (e.g. OPW sends MIME-Version twice)
+      const emailStr = rawEmail.toString();
+      const headerEnd = emailStr.indexOf("\r\n\r\n");
+      if (headerEnd !== -1) {
+        const headerSection = emailStr.substring(0, headerEnd);
+        const body = emailStr.substring(headerEnd);
+        const seen = new Set();
+        const dedupedHeaders = headerSection.split("\r\n").filter((line) => {
+          const key = line.split(":")[0].toLowerCase();
+          if (seen.has(key)) {
+            console.log(`[FIX] Removed duplicate header: ${key}`);
+            return false;
+          }
+          seen.add(key);
+          return true;
+        });
+        rawEmail = Buffer.from(dedupedHeaders.join("\r\n") + body);
+      }
 
       try {
         const parsed = await simpleParser(rawEmail);
