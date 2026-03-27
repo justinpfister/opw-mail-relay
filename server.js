@@ -19,9 +19,12 @@ const server = new SMTPServer({
   disabledCommands: ["STARTTLS"],
   authOptional: false,
   allowInsecureAuth: true,
+  hideSTARTTLS: true,
+  logger: true,
 
   // Authentication handler
   onAuth(auth, session, callback) {
+    console.log(`[AUTH] Attempt from ${session.remoteAddress} | method: ${auth.method} | user: ${auth.username}`);
     if (auth.username === config.smtpUser && auth.password === config.smtpPass) {
       console.log(`[AUTH] Success from ${session.remoteAddress}`);
       return callback(null, { user: auth.username });
