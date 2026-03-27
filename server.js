@@ -20,6 +20,7 @@ const server = new SMTPServer({
   authOptional: false,
   allowInsecureAuth: true,
   hideSTARTTLS: true,
+  size: 52428800,
   logger: true,
 
   // Authentication handler
