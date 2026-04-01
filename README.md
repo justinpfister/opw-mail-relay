@@ -1,8 +1,8 @@
 # OPW Mail Relay
 
-**SMTP relay server for OPW Fuel Management Systems (SiteSentinel, Petro Vend, FSC3000, and other OPW/Dover controllers running Windows CE)**
+**SMTP relay for [OPW Fuel Management Systems](https://www.opwglobal.com/products/fuel-management-systems) — FSC3000, SiteSentinel, Petro Vend, and other OPW/Dover controllers with embedded email alerting**
 
-If you've ever tried to get email alerts working from an OPW tank monitor to a modern mail provider — and watched it silently fail — this project is for you.
+If you've ever tried to get email alerts working from an OPW fuel site controller to a modern mail provider — and watched it silently fail — this project is for you.
 
 ```
 OPW Device ──plain SMTP──▸ This Relay ──TLS 1.2──▸ AWS SES ──▸ Recipient
@@ -11,15 +11,17 @@ OPW Device ──plain SMTP──▸ This Relay ──TLS 1.2──▸ AWS SES �
 
 ## The Problem
 
-OPW fuel management controllers (SiteSentinel iSite, Petro Vend, FSC3000, etc.) have built-in email alerting for inventory reports, tank alarms, and leak detection events. But their SMTP client is limited:
+OPW fuel management controllers like the [FSC3000 Fuel Site Controller](https://www.opwglobal.com/products/fuel-management-systems/fuel-control/fsc3000/fsc3000-fuel-site-controller), SiteSentinel iSite, and Petro Vend series are built to run fuel sites — tracking transactions, monitoring tank inventory, detecting leaks, and sending email alerts for all of it. These are Dover/OPW controllers found at thousands of fleet fueling and petroleum marketing sites.
 
-- **No TLS** — The embedded Windows CE mail client only speaks plain, unencrypted SMTP
-- **No modern auth** — Just basic username/password, no OAuth, no IAM, no API keys
-- **Protocol quirks** — Sends duplicate MIME headers, requires `SIZE` in EHLO, and other non-standard behavior
+The problem is their embedded SMTP client. These devices run Windows CE with a mail client that only speaks plain, unencrypted SMTP:
 
-Meanwhile, every modern email provider (Gmail, Office 365, AWS SES) requires TLS 1.2+ at minimum. You can't point the OPW device at them directly. It connects, fails the TLS handshake, and gives up silently. No error, no log, just... no emails.
+- **No TLS** — Can't negotiate TLS 1.2+ (or any TLS). The FSC3000 has an Ethernet port and RS-232 serial, but its mail stack is from an era before mandatory encryption
+- **No modern auth** — Just basic username/password over plaintext. No OAuth, no IAM, no API keys
+- **Protocol quirks** — Sends duplicate MIME headers, requires `SIZE` in EHLO response, and other non-standard behavior that strict mail servers reject
 
-We found this out the hard way.
+Meanwhile, every modern email provider (Gmail, Office 365, AWS SES) requires TLS 1.2+ at minimum. You can't point an OPW controller at them directly. It connects, fails the TLS handshake, and gives up silently. No error on the device, no useful log, just... no emails. Your inventory reports, tank alarms, and leak alerts never arrive.
+
+We found this out the hard way running FSC3000 controllers at commercial fueling sites.
 
 ## The Solution
 
@@ -39,6 +41,16 @@ This relay sits between the OPW device and AWS SES. It speaks "old SMTP" on one 
 | **No TLS support** | Device can't negotiate TLS, connection fails silently | Relay accepts plain SMTP and hides `STARTTLS` from EHLO so the device doesn't attempt it |
 
 If you're fighting with OPW email alerts and seeing any of these symptoms — devices connecting then immediately disconnecting, SES rejecting messages, or emails just never arriving — this relay fixes all of it.
+
+## Compatible Devices
+
+Built and tested with OPW/Dover fuel management hardware, including:
+
+- **[FSC3000 Fuel Site Controller](https://www.opwglobal.com/products/fuel-management-systems/fuel-control/fsc3000/fsc3000-fuel-site-controller)** — Fleet fueling and petroleum marketing controller with Ethernet and RS-232 communications
+- **SiteSentinel iSite** — Tank gauge and environmental monitoring
+- **Petro Vend 100/200** — Fuel island controllers
+
+Should work with any OPW controller that has SMTP email alerting, and likely any embedded device with a limited SMTP client that can't do TLS.
 
 ## Quick Start (EC2)
 
