@@ -1,0 +1,15 @@
+{
+  "name": "opw-mail-relay",
+  "version": "1.0.0",
+  "description": "SMTP relay server for OPW fuel management devices. Accepts SMTP on port 2525 and relays via AWS SES.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "smtp-server": "^3.13.0",
+    "mailparser": "^3.7.0",
+    "@aws-sdk/client-ses": "^3.0.0",
+    "@aws-sdk/client-ssm": "^3.0.0"
+  }
+}
